@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rights & Freedoms Quiz Game</title>
+<style>
+  :root{
+    --bg1:#0b1020;
+    --bg2:#151a33;
+    --panel:rgba(18,24,48,0.88);
+    --line:rgba(255,255,255,0.08);
+    --text:#f4f7ff;
+    --muted:#b9c2e3;
+    --accent:#66d9ff;
+    --accent2:#8b5cf6;
+    --good:#32d583;
+    --bad:#ff6b6b;
+    --gold:#ffd166;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:Arial, Helvetica, sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(139,92,246,0.22), transparent 28%),
+      radial-gradient(circle at top right, rgba(102,217,255,0.18), transparent 26%),
+      linear-gradient(135deg, var(--bg1), var(--bg2));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  .wrap{
+    width:min(920px, 100%);
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow:0 22px 60px rgba(0,0,0,0.4);
+    overflow:hidden;
+    backdrop-filter: blur(10px);
+  }
+
+  .topbar{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    padding:18px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  }
+
+  .stat{
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:16px;
+    padding:12px 14px;
+  }
+
+  .label{
+    color:var(--muted);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin-bottom:6px;
+  }
+
+  .value{
+    font-size:24px;
+    font-weight:700;
+  }
+
+  .timer-low{ color:var(--bad); }
+  .combo-hot{ color:var(--gold); }
+
+  .progress{
+    height:10px;
+    background:rgba(255,255,255,0.05);
+    border-radius:999px;
+    overflow:hidden;
+    margin-top:10px;
+  }
+
+  .progress-fill{
+    height:100%;
+    width:100%;
+    background:linear-gradient(90deg, var(--accent), var(--accent2));
+    transition:width 0.2s linear;
+  }
+
+  .main{
+    padding:28px;
+  }
+
+  .tag{
+    display:inline-block;
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(102,217,255,0.12);
+    border:1px solid rgba(102,217,255,0.2);
+    color:#c6f2ff;
+    font-size:13px;
+    margin-bottom:18px;
+  }
+
+  h1{
+    margin:0 0 10px;
+    font-size:clamp(28px, 4vw, 42px);
+    line-height:1.05;
+  }
+
+  .subtitle{
+    margin:0 0 24px;
+    color:var(--muted);
+    font-size:16px;
+  }
+
+  .question-box{
+    padding:22px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    background:rgba(255,255,255,0.03);
+    margin-bottom:20px;
+  }
+
+  .question-num{
+    color:#8fdfff;
+    font-size:14px;
+    margin-bottom:10px;
+    font-weight:700;
+  }
+
+  #question{
+    font-size:clamp(22px, 3vw, 30px);
+    line-height:1.25;
+    margin:0;
+  }
+
+  .answers{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+
+  .answer-btn{
+    text-align:left;
+    width:100%;
+    border:none;
+    border-radius:18px;
+    padding:16px 18px;
+    font-size:16px;
+    color:var(--text);
+    background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    border:1px solid rgba(255,255,255,0.08);
+    cursor:pointer;
+    transition:transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    min-height:78px;
+  }
+
+  .answer-btn:hover{
+    transform:translateY(-2px);
+    border-color:rgba(102,217,255,0.45);
+    box-shadow:0 8px 25px rgba(102,217,255,0.12);
+  }
+
+  .answer-btn.correct{
+    background:rgba(50,213,131,0.18);
+    border-color:rgba(50,213,131,0.7);
+  }
+
+  .answer-btn.wrong{
+    background:rgba(255,107,107,0.18);
+    border-color:rgba(255,107,107,0.7);
+  }
+
+  .answer-btn:disabled{
+    cursor:default;
+    transform:none;
+  }
+
+  .bottom{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:14px;
+    margin-top:20px;
+    flex-wrap:wrap;
+  }
+
+  #feedback{
+    min-height:28px;
+    font-size:18px;
+    font-weight:700;
+  }
+
+  .good{ color:var(--good); }
+  .bad{ color:var(--bad); }
+
+  .controls{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .control-btn{
+    border:none;
+    padding:12px 16px;
+    border-radius:14px;
+    cursor:pointer;
+    font-weight:700;
+    color:var(--text);
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.08);
+    transition:transform 0.15s ease, border-color 0.15s ease;
+  }
+
+  .control-btn:hover{
+    transform:translateY(-1px);
+    border-color:rgba(255,255,255,0.18);
+  }
+
+  .screen-center{
+    text-align:center;
+    padding:50px 28px;
+  }
+
+  .big-score{
+    font-size:clamp(44px,7vw,72px);
+    margin:10px 0 6px;
+    font-weight:900;
+    background:linear-gradient(90deg, #ffffff, #9de8ff, #c3b6ff);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+
+  .rank{
+    font-size:22px;
+    color:var(--gold);
+    margin-bottom:10px;
+    font-weight:700;
+  }
+
+  .summary{
+    color:var(--muted);
+    font-size:18px;
+    max-width:700px;
+    margin:0 auto 28px;
+    line-height:1.5;
+  }
+
+  @media (max-width:760px){
+    .topbar{ grid-template-columns:1fr 1fr; }
+    .answers{ grid-template-columns:1fr; }
+    .main{ padding:20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="app">
+      <div class="topbar">
+        <div class="stat">
+          <div class="label">Score</div>
+          <div class="value" id="score">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Combo</div>
+          <div class="value" id="combo">x0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Question</div>
+          <div class="value" id="questionCount">1 / 17</div>
+        </div>
+        <div class="stat">
+          <div class="label">Time Left</div>
+          <div class="value" id="timer">20</div>
+          <div class="progress"><div class="progress-fill" id="timeBar"></div></div>
+        </div>
+      </div>
+
+      <div class="main" id="main">
+        <div class="tag">Study Mode: Rights & Freedoms</div>
+        <h1>Rights & Freedoms Quiz</h1>
+        <p class="subtitle">Fast rounds, combo points, and test-style questions. Beat your best score.</p>
+
+        <div class="question-box">
+          <div class="question-num" id="qnum">Question 1</div>
+          <h2 id="question">Loading...</h2>
+        </div>
+
+        <div class="answers" id="answers"></div>
+
+        <div class="bottom">
+          <div id="feedback"></div>
+          <div class="controls">
+            <button class="control-btn" onclick="restartQuiz()">Restart</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const questionBank = [
+  {
+    question: "Why was the United Nations created?",
+    answers: [
+      "To stop future wars and encourage countries to work together peacefully",
+      "To replace every national government with one global government",
+      "To make all countries share the same laws and currency",
+      "To punish only countries that lost World War II"
+    ],
+    correct: 0
+  },
+  {
+    question: "Which idea best explains the purpose of the UN?",
+    answers: [
+      "Expanding empires",
+      "Reducing conflict and protecting human rights",
+      "Controlling trade only",
+      "Separating countries from each other"
+    ],
+    correct: 1
+  },
+  {
+    question: "Why is the Universal Declaration of Human Rights called 'universal'?",
+    answers: [
+      "Because it only applies to the United Nations",
+      "Because it is mainly for European countries",
+      "Because it applies to all people, everywhere",
+      "Because it only matters during wartime"
+    ],
+    correct: 2
+  },
+  {
+    question: "Which statement best matches Article 1 of the UDHR?",
+    answers: [
+      "All people are born free and equal in dignity and rights",
+      "Only adults have legal rights",
+      "Governments can decide who deserves rights",
+      "Rights apply only inside democratic countries"
+    ],
+    correct: 0
+  },
+  {
+    question: "Which of these is one reason the Holocaust helped lead to the UDHR?",
+    answers: [
+      "It showed how badly human rights can be abused",
+      "It ended all discrimination immediately",
+      "It proved countries did not need international cooperation",
+      "It made courts unnecessary"
+    ],
+    correct: 0
+  },
+  {
+    question: "What were the Stolen Generations?",
+    answers: [
+      "European children displaced during World War II",
+      "Indigenous children removed from their families by government policies",
+      "Children taken overseas for schooling programs",
+      "Aboriginal children who chose to leave home for work"
+    ],
+    correct: 1
+  },
+  {
+    question: "Why do some historians describe the Stolen Generations as genocide?",
+    answers: [
+      "Because the policy aimed to destroy Indigenous culture and identity",
+      "Because it was a battlefield conflict",
+      "Because it only affected adults",
+      "Because it involved voluntary migration"
+    ],
+    correct: 0
+  },
+  {
+    question: "What was the main goal of assimilation policies in Australia?",
+    answers: [
+      "To strengthen Indigenous languages",
+      "To force Indigenous people to adopt white Australian culture",
+      "To create separate Indigenous governments",
+      "To return land immediately"
+    ],
+    correct: 1
+  },
+  {
+    question: "Where were many removed Indigenous children sent?",
+    answers: [
+      "Luxury boarding schools",
+      "Military camps",
+      "Missions, institutions, or foster homes",
+      "International refugee camps"
+    ],
+    correct: 2
+  },
+  {
+    question: "Which impact is most closely linked to the Stolen Generations?",
+    answers: [
+      "Loss of family connection, culture, and identity",
+      "Greater voting rights straight away",
+      "Immediate equal treatment under the law",
+      "A sudden end to discrimination"
+    ],
+    correct: 0
+  },
+  {
+    question: "What was the Day of Mourning in 1938?",
+    answers: [
+      "A celebration of British settlement",
+      "A protest against the treatment of Aboriginal Australians",
+      "A holiday created by the UN",
+      "A court case about voting rights"
+    ],
+    correct: 1
+  },
+  {
+    question: "Why was the date of the Day of Mourning significant?",
+    answers: [
+      "It marked 150 years since British colonisation",
+      "It celebrated the end of World War II",
+      "It was the day the UN was formed",
+      "It marked the start of the Freedom Rides"
+    ],
+    correct: 0
+  },
+  {
+    question: "What was the Cummeragunja Walk-Off?",
+    answers: [
+      "A protest where Aboriginal people left a mission because of poor treatment",
+      "A US Civil Rights march led by MLK",
+      "A government program for employment",
+      "A legal case about segregation"
+    ],
+    correct: 0
+  },
+  {
+    question: "Why was the Cummeragunja Walk-Off important?",
+    answers: [
+      "It was one of the first major organised Aboriginal protests against government control",
+      "It immediately ended all assimilation policies",
+      "It gave Aboriginal people the vote the next day",
+      "It created the United Nations"
+    ],
+    correct: 0
+  },
+  {
+    question: "How were the Day of Mourning and Cummeragunja Walk-Off successful overall?",
+    answers: [
+      "They instantly changed every law",
+      "They raised awareness and inspired later activism, even if change was slow",
+      "They stopped all discrimination at once",
+      "They mainly improved conditions outside Australia"
+    ],
+    correct: 1
+  },
+  {
+    question: "What did the Bringing Them Home report investigate?",
+    answers: [
+      "The causes of World War II",
+      "The experiences and impact of the Stolen Generations",
+      "The drafting of the UDHR",
+      "The history of the Black Panthers"
+    ],
+    correct: 1
+  },
+  {
+    question: "Which answer best explains why historians study these topics together in Rights & Freedoms?",
+    answers: [
+      "Because they all show how rights can be denied and later defended through activism and law",
+      "Because they are all military battles",
+      "Because they only happened in Europe",
+      "Because none of them influenced modern society"
+    ],
+    correct: 0
+  }
+];
+
+let quiz = [];
+let current = 0;
+let score = 0;
+let combo = 0;
+let timer = 20;
+let timeLeft = 20;
+let timerId = null;
+let locked = false;
+let bestScore = Number(localStorage.getItem("rights_freedoms_best") || 0);
+
+function shuffle(array){
+  const arr = [...array];
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function setupQuiz(){
+  quiz = shuffle(questionBank);
+  current = 0;
+  score = 0;
+  combo = 0;
+  updateStats();
+  renderQuestion();
+}
+
+function startTimer(){
+  clearInterval(timerId);
+  timeLeft = timer;
+  updateTimerUI();
+
+  timerId = setInterval(() => {
+    timeLeft--;
+    updateTimerUI();
+
+    if(timeLeft <= 0){
+      clearInterval(timerId);
+      handleTimeout();
+    }
+  }, 1000);
+}
+
+function updateTimerUI(){
+  const timerEl = document.getElementById("timer");
+  const timeBar = document.getElementById("timeBar");
+  timerEl.textContent = timeLeft;
+  timerEl.classList.toggle("timer-low", timeLeft <= 5);
+  timeBar.style.width = `${(timeLeft / timer) * 100}%`;
+}
+
+function updateStats(){
+  document.getElementById("score").textContent = score;
+  const comboEl = document.getElementById("combo");
+  comboEl.textContent = "x" + combo;
+  comboEl.classList.toggle("combo-hot", combo >= 3);
+  document.getElementById("questionCount").textContent = `${Math.min(current + 1, quiz.length)} / ${quiz.length}`;
+}
+
+function renderQuestion(){
+  locked = false;
+  if(current >= quiz.length){
+    showEndScreen();
+    return;
+  }
+
+  const q = quiz[current];
+  document.getElementById("qnum").textContent = `Question ${current + 1}`;
+  document.getElementById("question").textContent = q.question;
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("feedback").className = "";
+
+  const answersDiv = document.getElementById("answers");
+  answersDiv.innerHTML = "";
+
+  q.answers.forEach((answer, index) => {
+    const btn = document.createElement("button");
+    btn.className = "answer-btn";
+    btn.textContent = answer;
+    btn.onclick = () => selectAnswer(index, btn);
+    answersDiv.appendChild(btn);
+  });
+
+  updateStats();
+  startTimer();
+}
+
+function selectAnswer(index, button){
+  if(locked) return;
+  locked = true;
+  clearInterval(timerId);
+
+  const q = quiz[current];
+  const buttons = [...document.querySelectorAll(".answer-btn")];
+  buttons.forEach(btn => btn.disabled = true);
+
+  const correctBtn = buttons[q.correct];
+  let pointsEarned = 0;
+
+  if(index === q.correct){
+    combo++;
+    pointsEarned = 100 + Math.max(0, timeLeft * 5) + (combo - 1) * 25;
+    score += pointsEarned;
+    button.classList.add("correct");
+    showFeedback(`Correct! +${pointsEarned} points`, true);
+  } else {
+    combo = 0;
+    button.classList.add("wrong");
+    correctBtn.classList.add("correct");
+    showFeedback("Not quite. Combo reset.", false);
+  }
+
+  updateStats();
+
+  setTimeout(() => {
+    current++;
+    renderQuestion();
+  }, 1200);
+}
+
+function handleTimeout(){
+  if(locked) return;
+  locked = true;
+  combo = 0;
+
+  const q = quiz[current];
+  const buttons = [...document.querySelectorAll(".answer-btn")];
+  buttons.forEach(btn => btn.disabled = true);
+  if(buttons[q.correct]) buttons[q.correct].classList.add("correct");
+
+  showFeedback("Time's up! Combo reset.", false);
+  updateStats();
+
+  setTimeout(() => {
+    current++;
+    renderQuestion();
+  }, 1400);
+}
+
+function showFeedback(message, good){
+  const el = document.getElementById("feedback");
+  el.textContent = message;
+  el.className = good ? "good" : "bad";
+}
+
+function getRank(finalScore){
+  const maxPossible = quiz.length * (100 + timer * 5 + 100);
+  const pct = finalScore / maxPossible;
+  if(pct >= 0.72) return "A Level Memory Machine";
+  if(pct >= 0.55) return "Solid Test Warrior";
+  if(pct >= 0.38) return "Getting There";
+  return "Needs Another Run";
+}
+
+function showEndScreen(){
+  clearInterval(timerId);
+  const main = document.getElementById("main");
+  const rank = getRank(score);
+
+  if(score > bestScore){
+    bestScore = score;
+    localStorage.setItem("rights_freedoms_best", String(bestScore));
+  }
+
+  main.innerHTML = `
+    <div class="screen-center">
+      <div class="tag">Quiz Complete</div>
+      <h1>You finished the study run</h1>
+      <div class="big-score">${score}</div>
+      <div class="rank">${rank}</div>
+      <p class="summary">
+        Best score: <strong>${bestScore}</strong><br>
+        You answered ${quiz.length} questions on the UN, UDHR, the Stolen Generations,
+        the Day of Mourning, and the Cummeragunja Walk-Off.
+      </p>
+      <div class="controls" style="justify-content:center;">
+        <button class="control-btn" onclick="restartQuiz()">Play Again</button>
+      </div>
+    </div>
+  `;
+}
+
+function restartQuiz(){
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <div class="tag">Study Mode: Rights & Freedoms</div>
+    <h1>Rights & Freedoms Quiz</h1>
+    <p class="subtitle">Fast rounds, combo points, and test-style questions. Beat your best score.</p>
+
+    <div class="question-box">
+      <div class="question-num" id="qnum">Question 1</div>
+      <h2 id="question">Loading...</h2>
+    </div>
+
+    <div class="answers" id="answers"></div>
+
+    <div class="bottom">
+      <div id="feedback"></div>
+      <div class="controls">
+        <button class="control-btn" onclick="restartQuiz()">Restart</button>
+      </div>
+    </div>
+  `;
+  setupQuiz();
+}
+
+setupQuiz();
+</script>
+</body>
+</html>
